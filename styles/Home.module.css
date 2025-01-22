@@ -1,4 +1,4 @@
-.page {
+/* .page {
   --gray-rgb: 0, 0, 0;
   --gray-alpha-200: rgba(var(--gray-rgb), 0.08);
   --gray-alpha-100: rgba(var(--gray-rgb), 0.05);
@@ -108,8 +108,8 @@ a.secondary {
   flex-shrink: 0;
 }
 
-/* Enable hover only on non-touch devices */
-@media (hover: hover) and (pointer: fine) {
+Enable hover only on non-touch devices */
+/* @media (hover: hover) and (pointer: fine) {
   a.primary:hover {
     background: var(--button-primary-hover);
     border-color: transparent;
@@ -165,4 +165,29 @@ a.secondary {
   .logo {
     filter: invert();
   }
+} */
+
+
+
+
+.main {
+  height: 100vh; /* Ensures the main element takes up the full height of the viewport */
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  position: relative;
 }
+
+.photoContainer {
+  position: absolute; /* Positioned absolutely to cover the whole page */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1; /* Places the image behind other content */
+}
+
+
+
+
+
