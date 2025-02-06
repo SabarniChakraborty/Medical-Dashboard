@@ -30,7 +30,7 @@ const Footer = () => {
         {/* {/ Column 1 - Logo & Info /} */}
         <Grid item xs={12} sm={6}>
           <Typography variant="h5" sx={{ fontWeight: "bold" }}>
-            Travel Website
+            Medical Dashboard
           </Typography>
           
           <Typography variant="body2" sx={{ marginTop: 2 }}>

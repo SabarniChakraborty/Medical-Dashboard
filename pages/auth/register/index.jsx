@@ -3,38 +3,41 @@ import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabaseClient';
 import { Box, Button, TextField, Typography, Container, Alert } from '@mui/material';
 import Link from 'next/link';
+import { useForm } from 'react-hook-form';
 import styles from '@/styles/register.module.css';
 
 const Register = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const router = useRouter();
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
+  // useForm hook for form validation
+  const { register, handleSubmit, formState: { errors } } = useForm();
+
+  const handleRegister = async (data) => {
     setError('');
     setMessage('');
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    const { email, password } = data;
 
-    const { data: userData, error: dbError } = await supabase
-      .from('users')
-      .insert([
-        {
-          email: email,
-        },
-      ]);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
-    if (error) {
-      setError(error.message);
-    } else {
-      setMessage('Registration successful! Please check your email to verify.');
-      router.push('/auth/login'); // Redirect to login
+      const { error: dbError } = await supabase
+        .from('users')
+        .insert([{ email }]);
+
+      if (dbError) {
+        setError(dbError.message);
+      } else {
+        setMessage('Registration successful! Please check your email to verify.');
+        router.push('/auth/login'); // Redirect to login
+      }
+    } catch (err) {
+      setError('An unexpected error occurred. Please try again.');
     }
   };
 
@@ -51,19 +54,20 @@ const Register = () => {
           Register
         </Typography>
 
-        <Box
-          component="form"
-          onSubmit={handleRegister}
-          className={styles.form}
-        >
+        <Box component="form" onSubmit={handleSubmit(handleRegister)} className={styles.form}>
           <TextField
             label="Email"
             variant="outlined"
             fullWidth
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoFocus
+            {...register('email', {
+              required: 'Email is required',
+              pattern: {
+                value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
+                message: 'Please enter a valid email address',
+              }
+            })}
+            error={!!errors.email}
+            helperText={errors.email ? errors.email.message : ''}
             className={styles.input}
           />
           <TextField
@@ -71,9 +75,15 @@ const Register = () => {
             type="password"
             variant="outlined"
             fullWidth
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
+            {...register('password', {
+              required: 'Password is required',
+              minLength: {
+                value: 6,
+                message: 'Password must be at least 6 characters',
+              },
+            })}
+            error={!!errors.password}
+            helperText={errors.password ? errors.password.message : ''}
             className={styles.input}
           />
           <Button type="submit" variant="contained" color="primary" fullWidth className={styles.button}>

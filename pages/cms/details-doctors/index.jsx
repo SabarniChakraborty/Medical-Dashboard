@@ -1,22 +1,44 @@
-
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Box, Grid, Typography, Button, Card, CardContent, CardMedia, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from "@mui/material";
-import { supabase } from "@/lib/supabaseClient"; // Your Supabase client
+import { useForm } from "react-hook-form"; // Import React Hook Form
+import { supabase } from "@/lib/supabaseClient";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import toast from "react-hot-toast";
 
 const DoctorDetails = () => {
   const [doctor, setDoctor] = useState(null);
-  const [editDoctor, setEditDoctor] = useState(null);
-  const [openEditDialog, setOpenEditDialog] = useState(false); // Controls the edit dialog
+  const [openEditDialog, setOpenEditDialog] = useState(false);
   const router = useRouter();
-  const { id } = router.query; // Get doctor id from the URL
+  const { id } = router.query;
 
-  // Fetch doctor details based on the id from the URL
+  // Initialize form
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm();
+
+
+
+  const allowedDesignations = [
+    "Cardiologist",
+    "Dermatologist",
+    "Neurologist",
+    "Pediatrician",
+    "Psychiatrist",
+    "Dentist",
+    "Orthopedic Surgeon",
+    "Ophthalmologist",
+    "Gynecologist",
+    "ENT Specialist",
+  ];
+
   useEffect(() => {
     const fetchDoctorDetails = async () => {
-      if (!id) return; // Do nothing if id is not available
+      if (!id) return;
 
       const { data, error } = await supabase
         .from("doctors")
@@ -26,55 +48,60 @@ const DoctorDetails = () => {
 
       if (error) {
         console.error("Error fetching doctor details:", error.message);
+        toast.error("Failed to fetch doctor details.");
       } else {
         setDoctor(data);
-        setEditDoctor(data); // Set the doctor details in editDoctor for the dialog
+        // Pre-fill form fields when data is loaded
+        setValue("name", data.name);
+        setValue("designation", data.designation);
+        setValue("fees", data.fees);
+        setValue("visiting_hours", data.visiting_hours);
       }
     };
 
     fetchDoctorDetails();
-  }, [id]);
+  }, [id, setValue]);
 
   if (!doctor) {
-    return <Typography>Loading...</Typography>; // Show loading state until data is fetched
+    return <Typography>Loading...</Typography>;
   }
 
-  // Delete a doctor by ID
+  // Delete doctor
   const handleDelete = async () => {
     const { error } = await supabase.from("doctors").delete().eq("id", doctor.id);
     if (error) {
       console.error("Error deleting doctor:", error.message);
+      toast.error("Error deleting doctor.");
     } else {
-      alert("Doctor deleted successfully!");
-      router.push("/cms/show-doctors"); // Redirect to the doctors list page after deletion
+      toast.success("Doctor deleted successfully!");
+      router.push("/cms/show-doctors");
     }
   };
 
-  // Open the edit dialog and set the doctor to be edited
+  // Open edit dialog
   const handleEdit = () => {
-    setEditDoctor(doctor); // Set the current doctor details in the dialog form
     setOpenEditDialog(true);
   };
 
-  // Save the edited doctor details
-  const handleSaveEdit = async () => {
+  // Save edited doctor details
+  const onSubmit = async (data) => {
     const { error } = await supabase
       .from("doctors")
       .update({
-        name: editDoctor.name,
-        designation: editDoctor.designation,
-        fees: editDoctor.fees,
-        visiting_hours: editDoctor.visiting_hours,
+        name: data.name,
+        designation: data.designation,
+        fees: data.fees,
+        visiting_hours: data.visiting_hours,
       })
-      .eq("id", editDoctor.id);
+      .eq("id", doctor.id);
 
     if (error) {
       console.error("Error updating doctor:", error.message);
+      toast.error("Error updating doctor.");
     } else {
-      // Update the UI with the new doctor details
-      setDoctor(editDoctor);
+      setDoctor(data);
       setOpenEditDialog(false);
-      alert("Doctor updated successfully!");
+      toast.success("Doctor updated successfully!");
     }
   };
 
@@ -83,7 +110,6 @@ const DoctorDetails = () => {
       <Typography variant="h4" gutterBottom>{doctor.name}</Typography>
 
       <Grid container spacing={4}>
-        {/* Left Section (Image) */}
         <Grid item xs={12} sm={4}>
           {doctor.photo_url && (
             <Card sx={{ height: "100%" }}>
@@ -92,36 +118,20 @@ const DoctorDetails = () => {
           )}
         </Grid>
 
-        {/* Right Section (Doctor Details) */}
         <Grid item xs={12} sm={8}>
           <Card>
             <CardContent>
               <Typography variant="h6">Designation: {doctor.designation}</Typography>
               <Typography variant="body1" sx={{ marginTop: 1 }}>Fees: ₹{doctor.fees}</Typography>
               <Typography variant="body1" sx={{ marginTop: 1 }}>Visiting Hours: {doctor.visiting_hours}</Typography>
-
-              {/* Additional details */}
-              <Typography variant="body2" sx={{ marginTop: 2 }}>
-                Detailed bio and other information about the doctor can be added here.
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Ea, culpa! In dolorum odio quo natus consectetur quaerat excepturi nulla architecto, asperiores unde officia optio atque quidem distinctio, error voluptatem earum.
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Non perferendis sint repudiandae odio minima est pariatur porro similique, rerum soluta iste illo provident. Ex consectetur accusantium velit aut architecto ut?Lorem ipsum dolor sit amet consectetur adipisicing elit. Praesentium enim laudantium in ipsam fuga, laboriosam ipsum, perferendis error, quidem suscipit iusto ducimus expedita possimus magni cum adipisci autem atque. Maxime!
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. 
-                Blanditiis praesentium, expedita iusto accusantium facilis obcaecati, dolorem aperiam \
-                modi maxime voluptatum veniam? Voluptatibus harum error cupiditate qui eveniet suscipit maiores corporis!
-                Lorem ipsum dolor sit, amet consectetur adipisicing elit. Porro impedit esse 
-                labore numquam ducimus tempora expedita, fugiat in aspernatur. Provident hic eos iure nobis atque, tempore similique numquam neque fuga?
-              </Typography>
             </CardContent>
           </Card>
 
-          {/* Action Buttons: Edit and Delete */}
           <Box sx={{ marginTop: 2, display: "flex", gap: 2 }}>
-            {/* Edit Button */}
             <Button variant="contained" color="primary" onClick={handleEdit} startIcon={<EditIcon />}>
               Edit
             </Button>
 
-            {/* Delete Button */}
             <Button variant="contained" color="secondary" onClick={handleDelete} startIcon={<DeleteIcon />}>
               Delete
             </Button>
@@ -135,55 +145,68 @@ const DoctorDetails = () => {
         </Grid>
       </Grid>
 
-      {/* Edit Dialog */}
+
+      {/* Edit Dialog with Validation */}
       <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)}>
         <DialogTitle>Edit Doctor</DialogTitle>
         <DialogContent>
-          <TextField
-            fullWidth
-            label="Name"
-            value={editDoctor?.name || ""}
-            onChange={(e) =>
-              setEditDoctor({ ...editDoctor, name: e.target.value })
-            }
-            sx={{ marginBottom: 2 }}
-          />
-          <TextField
-            fullWidth
-            label="Designation"
-            value={editDoctor?.designation || ""}
-            onChange={(e) =>
-              setEditDoctor({ ...editDoctor, designation: e.target.value })
-            }
-            sx={{ marginBottom: 2 }}
-          />
-          <TextField
-            fullWidth
-            label="Fees"
-            value={editDoctor?.fees || ""}
-            onChange={(e) =>
-              setEditDoctor({ ...editDoctor, fees: e.target.value })
-            }
-            sx={{ marginBottom: 2 }}
-          />
-          <TextField
-            fullWidth
-            label="Visiting Hours"
-            value={editDoctor?.visiting_hours || ""}
-            onChange={(e) =>
-              setEditDoctor({ ...editDoctor, visiting_hours: e.target.value })
-            }
-            sx={{ marginBottom: 2 }}
-          />
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <TextField
+              fullWidth
+              label="Name"
+              {...register("name", { required: "Name is required" })}
+              error={!!errors.name}
+              helperText={errors.name?.message}
+              sx={{ marginBottom: 2 }}
+            />
+
+            <TextField
+              label="Designation"
+              variant="outlined"
+              {...register("designation", {
+                required: "Designation is required",
+                validate: (value) =>
+                  allowedDesignations.includes(value) || "Invalid designation",
+              })}
+              fullWidth
+              error={!!errors.designation}
+              helperText={errors.designation?.message}
+              sx={{ backgroundColor: "#f9f9f9", borderRadius: 1, marginBottom: 2 }}
+            />
+          
+
+            <TextField
+              fullWidth
+              label="Fees"
+              type="number"
+              {...register("fees", {
+                required: "Fees is required",
+                min: { value: 0, message: "Fees must be a positive number" }
+              })}
+              error={!!errors.fees}
+              helperText={errors.fees?.message}
+              sx={{ marginBottom: 2 }}
+            />
+
+            <TextField
+              fullWidth
+              label="Visiting Hours"
+              {...register("visiting_hours", { required: "Visiting hours are required" })}
+              error={!!errors.visiting_hours}
+              helperText={errors.visiting_hours?.message}
+              sx={{ marginBottom: 2 }}
+            />
+
+            <DialogActions>
+              <Button onClick={() => setOpenEditDialog(false)} color="secondary">
+                Cancel
+              </Button>
+              <Button type="submit" color="primary">
+                Save
+              </Button>
+            </DialogActions>
+          </form>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenEditDialog(false)} color="secondary">
-            Cancel
-          </Button>
-          <Button onClick={handleSaveEdit} color="primary">
-            Save
-          </Button>
-        </DialogActions>
       </Dialog>
     </Box>
   );

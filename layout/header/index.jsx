@@ -55,9 +55,9 @@ const Header = () => {
     router.push("/");
   };
 
-  const handleOpenModal = () => {
-    setOpenModal(true);
-  };
+  // const handleOpenModal = () => {
+  //   setOpenModal(true);
+  // };
 
   const handleCloseModal = () => {
     setOpenModal(false);
@@ -122,9 +122,10 @@ const Header = () => {
         </ListItem>
 
         {userRole === "admin" ? (
-          <ListItem button onClick={handleOpenModal}>
-            <ListItemText primary="Admin Dashboard" />
-          </ListItem>
+          <Button color="inherit" onClick={() => router.push("/cms/admin-dashboard")}>
+          Admin Dashboard
+        </Button>
+        
         ) : (
           <ListItem button onClick={() => router.push("/cms/show-doctors")}>
             <ListItemText primary="Services" />
@@ -135,7 +136,7 @@ const Header = () => {
         <ListItem button onClick={() => router.push("/contact")}>
           <ListItemText primary="Contact" />
         </ListItem>
-         
+
 
         <ListItem button onClick={() => router.push("/about")}>
           <ListItemText primary="About" />
@@ -189,10 +190,10 @@ const Header = () => {
 
 
               {userRole === "admin" ? (
-                <Button color="inherit" onClick={handleOpenModal}>
-                  Admin Dashboard
-                </Button>
-
+               <Button color="inherit" onClick={() => router.push("/cms/admin-dashboard")}>
+               Admin Dashboard
+             </Button>
+             
               ) : (
                 <Button color="inherit" onClick={() => router.push("/cms/show-doctors")}>
                   Services
@@ -204,6 +205,12 @@ const Header = () => {
               <Button color="inherit" onClick={() => router.push("/contact")}>
                 Contact
               </Button>
+
+              {/* {userRole === "user" && (
+                <Button color="inherit" onClick={() => router.push("/cms/user-profile")}>
+                  Profile
+                </Button>
+              )} */}
 
 
               <Button color="inherit" onClick={() => router.push("/about")}>
@@ -228,7 +235,7 @@ const Header = () => {
         </Toolbar>
       </AppBar>
 
-      {/* {/ Drawer for Small Screens /} */}
+      {/* {/ Drawer for Small creens /} */} 
       <Drawer
         anchor="right"
         open={drawerOpen}
@@ -241,7 +248,7 @@ const Header = () => {
 
 
       {/* ////// dialog button////////////// */}
-      <Dialog open={openModal} onClose={handleCloseModal}>
+      {/* <Dialog open={openModal} onClose={handleCloseModal}>
         <DialogTitle>Admin Actions</DialogTitle>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -274,7 +281,7 @@ const Header = () => {
             Close
           </Button>
         </DialogActions>
-      </Dialog>
+      </Dialog> */}
 
     </>
   );

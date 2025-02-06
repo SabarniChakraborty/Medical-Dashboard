@@ -182,59 +182,60 @@
 
 
 import React, { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
 import {
   Box,
   Button,
   TextField,
   Typography,
-  Grid,
   Container,
 } from "@mui/material";
-import { supabase } from "@/lib/supabaseClient"; // Import Supabase client
-import { useRouter } from "next/router"; // Import useRouter
+import { supabase } from "@/lib/supabaseClient";
+import { useRouter } from "next/router";
+import toast from "react-hot-toast";
 
 const AddDoctor = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    designation: "",
-    fees: "",
-    visiting_hours: "",
-    photo: null,
-    photoPreview: null, // Added for preview
-  });
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    formState: { errors },
+  } = useForm();
 
-  const router = useRouter(); // Initialize useRouter
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
+  const allowedDesignations = [
+    "Cardiologist",
+    "Dermatologist",
+    "Neurologist",
+    "Pediatrician",
+    "Psychiatrist",
+    "Dentist",
+    "Orthopedic Surgeon",
+    "Ophthalmologist",
+    "Gynecologist",
+    "ENT Specialist",
+  ];
+
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const router = useRouter();
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData({
-        ...formData,
-        photo: file,
-        photoPreview: URL.createObjectURL(file), // Set preview URL
-      });
+      setValue("photo", file); // Update file in React Hook Form
+      setPhotoPreview(URL.createObjectURL(file));
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!formData.name || !formData.designation || !formData.fees || !formData.visiting_hours || !formData.photo) {
-      alert("All fields are required!");
-      return;
-    }
-
+  const onSubmit = async (data) => {
     try {
-      const photoFile = formData.photo;
-      const fileName = `${Date.now()}_${photoFile.name}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("medical dashboard") // Ensure you have a "photos" bucket in Supabase Storage
-        .upload(fileName, photoFile);
+      const { name, designation, fees, visiting_hours, photo } = data;
+      const fileName = `${Date.now()}_${photo.name}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("medical dashboard")
+        .upload(fileName, photo);
 
       if (uploadError) throw uploadError;
 
@@ -242,23 +243,21 @@ const AddDoctor = () => {
         .from("medical dashboard")
         .getPublicUrl(fileName).data.publicUrl;
 
-      const { data, error } = await supabase.from("doctors").insert([{
-        name: formData.name,
-        designation: formData.designation,
-        fees: parseFloat(formData.fees),
-        visiting_hours: formData.visiting_hours,
-        photo_url: photoUrl, // Save the photo URL
+      const { error } = await supabase.from("doctors").insert([{
+        name,
+        designation,
+        fees: parseFloat(fees),
+        visiting_hours,
+        photo_url: photoUrl,
       }]);
 
       if (error) throw error;
 
-      alert("Doctor added successfully!");
-
-      // Redirect to ShowDoctors page
-      router.push("/cms/show-doctors");
+      toast.success("Doctor added successfully!");
+      setTimeout(() => router.push("/cms/show-doctors"), 1500);
     } catch (err) {
       console.error("Error:", err.message);
-      alert("Error adding doctor.");
+      toast.error("Error adding doctor.");
     }
   };
 
@@ -284,7 +283,7 @@ const AddDoctor = () => {
 
         <Box
           component="form"
-          onSubmit={handleSubmit}
+          onSubmit={handleSubmit(onSubmit)}
           sx={{
             display: "flex",
             flexDirection: "column",
@@ -296,69 +295,94 @@ const AddDoctor = () => {
           <TextField
             label="Name"
             variant="outlined"
-            name="name"
-            value={formData.name}
-            onChange={handleInputChange}
+            {...register("name", { required: "Name is required" })}
             fullWidth
-            required
+            error={!!errors.name}
+            helperText={errors.name?.message}
             sx={{ backgroundColor: "#f9f9f9", borderRadius: 1 }}
           />
+
+
           <TextField
             label="Designation"
             variant="outlined"
-            name="designation"
-            value={formData.designation}
-            onChange={handleInputChange}
+            {...register("designation", {
+              required: "Designation is required",
+              validate: (value) =>
+                allowedDesignations.includes(value) || "Invalid designation",
+            })}
             fullWidth
-            required
+            error={!!errors.designation}
+            helperText={errors.designation?.message}
             sx={{ backgroundColor: "#f9f9f9", borderRadius: 1 }}
           />
+
+
           <TextField
             label="Fees"
             variant="outlined"
-            name="fees"
-            value={formData.fees}
-            onChange={handleInputChange}
             type="number"
+            {...register("fees", {
+              required: "Fees are required",
+              min: { value: 0, message: "Fees must be positive" },
+            })}
             fullWidth
-            required
+            error={!!errors.fees}
+            helperText={errors.fees?.message}
             sx={{ backgroundColor: "#f9f9f9", borderRadius: 1 }}
           />
+
           <TextField
             label="Visiting Hours"
             variant="outlined"
-            name="visiting_hours"
-            value={formData.visiting_hours}
-            onChange={handleInputChange}
+            {...register("visiting_hours", {
+              required: "Visiting hours are required",
+              // pattern: {
+              //   value: /^[0-9]{2}:[0-9]{2} - [0-9]{2}:[0-9]{2}$/,
+              //   message: "Format: HH:MM - HH:MM",
+              // },
+            })}
             fullWidth
-            required
+            error={!!errors.visiting_hours}
+            helperText={errors.visiting_hours?.message}
             sx={{ backgroundColor: "#f9f9f9", borderRadius: 1 }}
           />
 
-          <Button variant="contained" component="label" sx={{ marginTop: 2 , }}>
-            Upload Photo
-            <input
-              type="file"
-              hidden
-              accept="image/*"
-              onChange={handlePhotoUpload}
-              required
-            />
-          </Button>
+          <Controller
+            name="photo"
+            control={control}
+            rules={{ required: "Photo is required" }}
+            render={({ field }) => (
+              <>
+                <Button variant="contained" component="label" sx={{ marginTop: 2 }}>
+                  Upload Photo
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={(e) => {
+                      field.onChange(e.target.files[0]);
+                      handlePhotoUpload(e);
+                    }}
+                  />
+                </Button>
+                {errors.photo && (
+                  <Typography variant="body2" color="error">
+                    {errors.photo.message}
+                  </Typography>
+                )}
+              </>
+            )}
+          />
 
-          {formData.photoPreview && (
-            <Box
-              sx={{
-                marginTop: 2,
-                textAlign: "center",
-              }}
-            >
+          {photoPreview && (
+            <Box sx={{ marginTop: 2, textAlign: "center" }}>
               <Typography variant="body2" sx={{ marginBottom: 1 }}>
                 Photo Preview:
               </Typography>
               <Box
                 component="img"
-                src={formData.photoPreview}
+                src={photoPreview}
                 alt="Preview"
                 sx={{
                   width: "100%",
@@ -372,12 +396,7 @@ const AddDoctor = () => {
             </Box>
           )}
 
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            sx={{ marginTop: 3 }}
-          >
+          <Button type="submit" variant="contained" color="primary" sx={{ marginTop: 3 }}>
             Submit
           </Button>
         </Box>
@@ -387,4 +406,3 @@ const AddDoctor = () => {
 };
 
 export default AddDoctor;
-

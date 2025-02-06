@@ -16,20 +16,19 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { supabase } from "@/lib/supabaseClient";
-import { toast } from "react-hot-toast"; // Only import `toast`
+import { toast } from "react-hot-toast";
 
 const ShowBooking = () => {
   const [appointments, setAppointments] = useState([]);
-  const [selectedAppointment, setSelectedAppointment] = useState(null); // Holds the appointment being edited
-  const [openDialog, setOpenDialog] = useState(false); // Controls the edit dialog
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false);
 
-  // Fetch appointments from the database
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
         const { data, error } = await supabase.from("doctor_bookings").select("*");
         if (error) throw error;
-        setAppointments(data); // Set fetched appointments to state
+        setAppointments(data);
       } catch (err) {
         console.error("Error fetching appointments:", err.message);
       }
@@ -38,19 +37,16 @@ const ShowBooking = () => {
     fetchAppointments();
   }, []);
 
-  // Open the dialog box for editing
   const handleEdit = (appointment) => {
     setSelectedAppointment(appointment);
     setOpenDialog(true);
   };
 
-  // Handle closing the dialog box
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedAppointment(null);
   };
 
-  // Save the edited details
   const handleSave = async () => {
     try {
       const { error } = await supabase
@@ -63,43 +59,38 @@ const ShowBooking = () => {
           symptoms: selectedAppointment.symptoms,
           gender: selectedAppointment.gender,
           appointment_time: selectedAppointment.appointment_time,
+          // doctor_name: selectedAppointment.doctor_name,
         })
         .eq("id", selectedAppointment.id);
 
       if (error) throw error;
 
-      // Update the state with the edited details
       setAppointments((prevAppointments) =>
         prevAppointments.map((appointment) =>
-          appointment.id === selectedAppointment.id
-            ? selectedAppointment
-            : appointment
+          appointment.id === selectedAppointment.id ? selectedAppointment : appointment
         )
       );
 
+      toast.success("Appointment updated successfully!");
       handleCloseDialog();
     } catch (err) {
       console.error("Error updating appointment:", err.message);
+      toast.error("Failed to update the appointment.");
     }
   };
 
-  // Delete an appointment
   const handleDelete = async (id) => {
     try {
       const { error } = await supabase.from("doctor_bookings").delete().eq("id", id);
       if (error) throw error;
 
-      // Remove the deleted appointment from state
       setAppointments((prevAppointments) =>
         prevAppointments.filter((appointment) => appointment.id !== id)
       );
 
-      // Show success toast
       toast.success("Appointment deleted successfully!");
     } catch (err) {
       console.error("Error deleting appointment:", err.message);
-
-      // Show error toast
       toast.error("Failed to delete the appointment.");
     }
   };
@@ -123,8 +114,8 @@ const ShowBooking = () => {
                 <Typography variant="body2">Symptoms: {appointment.symptoms}</Typography>
                 <Typography variant="body2">Gender: {appointment.gender}</Typography>
                 <Typography variant="body2">Time: {appointment.appointment_time}</Typography>
+                {/* <Typography variant="body2">Doctor: {appointment.doctor_name}</Typography> */}
 
-                {/* Edit and Delete Icons */}
                 <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, marginTop: 2 }}>
                   <IconButton color="primary" onClick={() => handleEdit(appointment)} sx={{ "&:hover": { backgroundColor: "#f5f5f5" } }}>
                     <EditIcon />
@@ -139,7 +130,6 @@ const ShowBooking = () => {
         ))}
       </Grid>
 
-      {/* Edit Dialog */}
       {selectedAppointment && (
         <Dialog open={openDialog} onClose={handleCloseDialog}>
           <DialogTitle sx={{ fontWeight: "bold" }}>Edit Appointment</DialogTitle>
@@ -228,6 +218,19 @@ const ShowBooking = () => {
               }
               sx={{ marginBottom: 2 }}
             />
+            {/* <TextField
+              fullWidth
+              label="Doctor Name"
+              value={selectedAppointment.doctor_name}
+              onChange={(e) =>
+                setSelectedAppointment({
+                  ...selectedAppointment,
+                  doctor_name: e.target.value,
+                })
+              }
+              sx={{ marginBottom: 2 }}
+            /> */}
+            
           </DialogContent>
           <DialogActions sx={{ padding: 3 }}>
             <Button onClick={handleCloseDialog} color="secondary" variant="outlined">

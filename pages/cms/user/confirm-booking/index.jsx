@@ -7,7 +7,7 @@ const ConfirmBookingPage = () => {
   const router = useRouter();
 
   const handleGoHome = () => {
-    router.push("/"); // Redirect to the home page
+    router.push("/cms/user/patient-details"); // Redirect to the home page
   };
 
   return (
