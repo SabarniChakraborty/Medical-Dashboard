@@ -17,11 +17,19 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "react-hot-toast";
+import { useForm } from "react-hook-form"; // Import useForm from react-hook-form
 
 const ShowBooking = () => {
   const [appointments, setAppointments] = useState([]);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm(); // Use react-hook-form
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -40,6 +48,14 @@ const ShowBooking = () => {
   const handleEdit = (appointment) => {
     setSelectedAppointment(appointment);
     setOpenDialog(true);
+    // Set default values for the form
+    setValue("patient_name", appointment.patient_name);
+    setValue("phone_number", appointment.phone_number);
+    setValue("email", appointment.email);
+    setValue("department", appointment.department);
+    setValue("symptoms", appointment.symptoms);
+    setValue("gender", appointment.gender);
+    setValue("appointment_time", appointment.appointment_time);
   };
 
   const handleCloseDialog = () => {
@@ -47,19 +63,18 @@ const ShowBooking = () => {
     setSelectedAppointment(null);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (data) => {
     try {
       const { error } = await supabase
         .from("doctor_bookings")
         .update({
-          patient_name: selectedAppointment.patient_name,
-          phone_number: selectedAppointment.phone_number,
-          email: selectedAppointment.email,
-          department: selectedAppointment.department,
-          symptoms: selectedAppointment.symptoms,
-          gender: selectedAppointment.gender,
-          appointment_time: selectedAppointment.appointment_time,
-          // doctor_name: selectedAppointment.doctor_name,
+          patient_name: data.patient_name,
+          phone_number: data.phone_number,
+          email: data.email,
+          department: data.department,
+          symptoms: data.symptoms,
+          gender: data.gender,
+          appointment_time: data.appointment_time,
         })
         .eq("id", selectedAppointment.id);
 
@@ -67,7 +82,7 @@ const ShowBooking = () => {
 
       setAppointments((prevAppointments) =>
         prevAppointments.map((appointment) =>
-          appointment.id === selectedAppointment.id ? selectedAppointment : appointment
+          appointment.id === selectedAppointment.id ? { ...appointment, ...data } : appointment
         )
       );
 
@@ -114,7 +129,6 @@ const ShowBooking = () => {
                 <Typography variant="body2">Symptoms: {appointment.symptoms}</Typography>
                 <Typography variant="body2">Gender: {appointment.gender}</Typography>
                 <Typography variant="body2">Time: {appointment.appointment_time}</Typography>
-                {/* <Typography variant="body2">Doctor: {appointment.doctor_name}</Typography> */}
 
                 <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, marginTop: 2 }}>
                   <IconButton color="primary" onClick={() => handleEdit(appointment)} sx={{ "&:hover": { backgroundColor: "#f5f5f5" } }}>
@@ -134,112 +148,79 @@ const ShowBooking = () => {
         <Dialog open={openDialog} onClose={handleCloseDialog}>
           <DialogTitle sx={{ fontWeight: "bold" }}>Edit Appointment</DialogTitle>
           <DialogContent sx={{ padding: 3 }}>
-            <TextField
-              fullWidth
-              label="Patient Name"
-              value={selectedAppointment.patient_name}
-              onChange={(e) =>
-                setSelectedAppointment({
-                  ...selectedAppointment,
-                  patient_name: e.target.value,
-                })
-              }
-              sx={{ marginBottom: 2 }}
-            />
-            <TextField
-              fullWidth
-              label="Phone Number"
-              value={selectedAppointment.phone_number}
-              onChange={(e) =>
-                setSelectedAppointment({
-                  ...selectedAppointment,
-                  phone_number: e.target.value,
-                })
-              }
-              sx={{ marginBottom: 2 }}
-            />
-            <TextField
-              fullWidth
-              label="Email"
-              value={selectedAppointment.email}
-              onChange={(e) =>
-                setSelectedAppointment({
-                  ...selectedAppointment,
-                  email: e.target.value,
-                })
-              }
-              sx={{ marginBottom: 2 }}
-            />
-            <TextField
-              fullWidth
-              label="Department"
-              value={selectedAppointment.department}
-              onChange={(e) =>
-                setSelectedAppointment({
-                  ...selectedAppointment,
-                  department: e.target.value,
-                })
-              }
-              sx={{ marginBottom: 2 }}
-            />
-            <TextField
-              fullWidth
-              label="Symptoms"
-              value={selectedAppointment.symptoms}
-              onChange={(e) =>
-                setSelectedAppointment({
-                  ...selectedAppointment,
-                  symptoms: e.target.value,
-                })
-              }
-              sx={{ marginBottom: 2 }}
-            />
-            <TextField
-              fullWidth
-              label="Gender"
-              value={selectedAppointment.gender}
-              onChange={(e) =>
-                setSelectedAppointment({
-                  ...selectedAppointment,
-                  gender: e.target.value,
-                })
-              }
-              sx={{ marginBottom: 2 }}
-            />
-            <TextField
-              fullWidth
-              label="Appointment Time"
-              value={selectedAppointment.appointment_time}
-              onChange={(e) =>
-                setSelectedAppointment({
-                  ...selectedAppointment,
-                  appointment_time: e.target.value,
-                })
-              }
-              sx={{ marginBottom: 2 }}
-            />
-            {/* <TextField
-              fullWidth
-              label="Doctor Name"
-              value={selectedAppointment.doctor_name}
-              onChange={(e) =>
-                setSelectedAppointment({
-                  ...selectedAppointment,
-                  doctor_name: e.target.value,
-                })
-              }
-              sx={{ marginBottom: 2 }}
-            /> */}
-            
+            <form onSubmit={handleSubmit(handleSave)}>
+              <TextField
+                fullWidth
+                label="Patient Name"
+                {...register("patient_name", { required: "Patient name is required" })}
+                error={!!errors.patient_name}
+                helperText={errors.patient_name ? errors.patient_name.message : ""}
+                sx={{ marginBottom: 2 }}
+              />
+              <TextField
+                fullWidth
+                label="Phone Number"
+                {...register("phone_number", { required: "Phone number is required" })}
+                error={!!errors.phone_number}
+                helperText={errors.phone_number ? errors.phone_number.message : ""}
+                sx={{ marginBottom: 2 }}
+              />
+              <TextField
+                fullWidth
+                label="Email"
+                {...register("email", { 
+                  required: "Email is required", 
+                  pattern: {
+                    value: /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$/,
+                    message: "Invalid email format",
+                  },
+                })}
+                error={!!errors.email}
+                helperText={errors.email ? errors.email.message : ""}
+                sx={{ marginBottom: 2 }}
+              />
+              <TextField
+                fullWidth
+                label="Department"
+                {...register("department", { required: "Department is required" })}
+                error={!!errors.department}
+                helperText={errors.department ? errors.department.message : ""}
+                sx={{ marginBottom: 2 }}
+              />
+              <TextField
+                fullWidth
+                label="Symptoms"
+                {...register("symptoms", { required: "Symptoms are required" })}
+                error={!!errors.symptoms}
+                helperText={errors.symptoms ? errors.symptoms.message : ""}
+                sx={{ marginBottom: 2 }}
+              />
+              <TextField
+                fullWidth
+                label="Gender"
+                {...register("gender", { required: "Gender is required" })}
+                error={!!errors.gender}
+                helperText={errors.gender ? errors.gender.message : ""}
+                sx={{ marginBottom: 2 }}
+              />
+              <TextField
+                fullWidth
+                label="Appointment Time"
+                {...register("appointment_time", { required: "Appointment time is required" })}
+                error={!!errors.appointment_time}
+                helperText={errors.appointment_time ? errors.appointment_time.message : ""}
+                sx={{ marginBottom: 2 }}
+              />
+              <DialogActions sx={{ padding: 3 }}>
+                <Button onClick={handleCloseDialog} color="secondary" variant="outlined">
+                  Cancel
+                </Button>
+                <Button type="submit" color="primary" variant="contained">
+                  Save
+                </Button>
+              </DialogActions>
+            </form>
           </DialogContent>
-          <DialogActions sx={{ padding: 3 }}>
-            <Button onClick={handleCloseDialog} color="secondary" variant="outlined">
-              Cancel
-            </Button>
-            <Button onClick={handleSave} color="primary" variant="contained">
-              Save
-            </Button>
-          </DialogActions>
         </Dialog>
       )}
     </Box>
